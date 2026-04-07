@@ -24,7 +24,7 @@ EOF
   osascript -e 'tell application "Terminal" to close front window saving no' >/dev/null
 }
 
-capture_terminal "./assistant-runtime-showcase proof" "$OUT_DIR/proof-dashboard.png"
-capture_terminal "./assistant-runtime-showcase snapshot --turn 8" "$OUT_DIR/pipeline-snapshot-turn8.png"
+capture_terminal "cargo run --bin assistant-runtime-showcase -- proof" "$OUT_DIR/proof-dashboard.png"
+capture_terminal "cargo run --bin assistant-runtime-showcase -- snapshot --turn 8" "$OUT_DIR/pipeline-snapshot-turn8.png"
 
 printf 'captured screenshots in %s\n' "$OUT_DIR"
