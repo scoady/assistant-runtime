@@ -126,7 +126,7 @@ pub fn manifest() -> AssistantRuntimeManifest {
     AssistantRuntimeManifest {
         schema: "tool_os.assistant_runtime.manifest.v1".to_string(),
         package_id: "assistant.runtime".to_string(),
-        version: "1.3.2".to_string(),
+        version: "1.3.3".to_string(),
         summary: "Compatibility-first assistant runtime package over the current .runtime substrate.".to_string(),
         umbrella_runtime: "assistant_runtime".to_string(),
         compatibility_mode: "reads and writes the current .runtime state stores without destructive migration".to_string(),
