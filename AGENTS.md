@@ -17,6 +17,11 @@
 - Confirm version metadata matches the intended tag.
 - Produce release notes and verify artifacts before and after publish.
 
+## GitHub Tooling
+
+- Prefer normal `git push` and high-level `gh` commands first.
+- If GitHub connectivity, credential-helper, or transport issues block those commands, note that plainly and fall back to `gh api` instead of waffling on repeated retries.
+
 ## Documentation
 
 - Update docs when commands, workflows, behavior, or release process changes.
