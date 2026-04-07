@@ -211,6 +211,32 @@ This is the core trust model: the runtime should know exactly which governed res
 
 ## Install Into a Target Repository
 
+Preferred install flow for an agent:
+
+```bash
+./scripts/install-and-activate-runtime.sh /absolute/path/to/target-repo
+```
+
+If you run it from inside the target repo, the path is optional:
+
+```bash
+cd /absolute/path/to/target-repo
+/absolute/path/to/assistant-runtime/scripts/install-and-activate-runtime.sh
+source ./.assistant-runtime/activate.sh
+assistant-runtime runtime manifest
+assistant-conversation-runtime status
+```
+
+What the script does:
+
+- builds the local `assistant-runtime` binary
+- packages the runtime bundle into a temporary directory
+- installs the bundle into `<target-repo>/.assistant-runtime/`
+- writes `<target-repo>/.assistant-runtime/activate.sh`
+- prints the exact activation command for the current shell
+
+Manual package/install flow is still available:
+
 ```bash
 ./dist/assistant-runtime/install.sh /absolute/path/to/target-repo
 ```
@@ -371,3 +397,9 @@ This is the foreground orchestrator path. The chat interface stays available whi
 ```text
 [planning_decision: yes] [execution_path: planner]
 ```
+
+## License
+
+This repository is licensed under the GNU General Public License v3.0 only.
+
+See [LICENSE](LICENSE).
