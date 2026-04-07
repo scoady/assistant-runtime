@@ -1,0 +1,52 @@
+{
+  "schema": "assistant.runtime.benchmark.v1",
+  "scenario": "assistant.runtime.showcase.v1",
+  "methodology": [
+    "same 20-turn query set for both routes",
+    "governed and stock routes executed sequentially",
+    "one route run at a time for fair local resource use",
+    "metrics emphasize drift, amplification, and stable truth delivery"
+  ],
+  "unique_truth_tokens": 433,
+  "governed": {
+    "route": "governed",
+    "turns": 20,
+    "wall_time_micros": 162,
+    "metrics": {
+      "visible_tokens": 525,
+      "relevant_tokens": 525,
+      "irrelevant_tokens": 0,
+      "truth_delivery_ratio": 1.0,
+      "context_amplification": 1.2124711316397228,
+      "drift_pressure_per_turn": 0.0,
+      "stable_reference_rate": 1.0,
+      "resume_boundary_rate": 1.0
+    }
+  },
+  "stock": {
+    "route": "stock",
+    "turns": 20,
+    "wall_time_micros": 203,
+    "metrics": {
+      "visible_tokens": 1732,
+      "relevant_tokens": 753,
+      "irrelevant_tokens": 979,
+      "truth_delivery_ratio": 0.43475750577367206,
+      "context_amplification": 4.0,
+      "drift_pressure_per_turn": 48.95,
+      "stable_reference_rate": 0.0,
+      "resume_boundary_rate": 0.0
+    }
+  },
+  "delta": {
+    "irrelevant_reduction_tokens": 979,
+    "truth_delivery_gain": 0.5652424942263279,
+    "amplification_reduction": 2.787528868360277
+  },
+  "effects": [
+    "governed isolates context by lane and preserves stable references",
+    "stock shares context across the whole loop and amplifies irrelevant exposure",
+    "lower drift pressure means less accidental carryover between turns",
+    "higher resume-boundary rate means the runtime can restart from durable truth instead of chat residue"
+  ]
+}

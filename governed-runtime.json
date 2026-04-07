@@ -1,0 +1,182 @@
+{
+  "schema": "assistant.runtime.governed_runtime.v1",
+  "name": "assistant-runtime",
+  "description": "Governed runtime that declaratively owns runtimes, skills, tools, MCPs, capabilities, utilities, and queue-backed worker execution above ambient agent context.",
+  "repo_url": "https://github.com/scoady/assistant-runtime.git",
+  "skills_dir": "external_skills",
+  "install": {
+    "type": "rust_binary",
+    "command": "assistant-runtime",
+    "build": "cargo build --release",
+    "install_target": "."
+  },
+  "runtime": {
+    "state_root": ".runtime",
+    "umbrella_runtime": "assistant.runtime",
+    "conversation_runtime": "assistant.runtime.conversation",
+    "queue_runtime": "assistant.runtime.task_queue",
+    "direct_worker_runtime": "assistant.runtime.direct_worker",
+    "planner_worker_runtime": "assistant.runtime.loop",
+    "declared_runtimes": [
+      "assistant.runtime",
+      "assistant.runtime.loop",
+      "assistant.runtime.conversation",
+      "assistant.runtime.governance",
+      "assistant.runtime.host",
+      "assistant.runtime.os",
+      "assistant.runtime.registry"
+    ]
+  },
+  "managed_resources": {
+    "skills_dir": "external_skills",
+    "resources": [
+      {
+        "resource_id": "assistant.runtime.capabilities",
+        "resource_class": "capability_catalog",
+        "mounting_mode": "mounted_on_demand",
+        "default_visibility": "catalog_only",
+        "owned_by": [
+          "assistant.runtime.governance",
+          "assistant.runtime"
+        ]
+      },
+      {
+        "resource_id": "assistant.runtime.skills",
+        "resource_class": "skill_bundle",
+        "mounting_mode": "mounted_on_demand",
+        "default_visibility": "not_ambient",
+        "owned_by": [
+          "assistant.runtime.governance",
+          "assistant.runtime.conversation"
+        ]
+      },
+      {
+        "resource_id": "assistant.runtime.tools",
+        "resource_class": "tool_surface",
+        "mounting_mode": "mounted_on_demand",
+        "default_visibility": "not_ambient",
+        "owned_by": [
+          "assistant.runtime.host",
+          "assistant.runtime.os",
+          "assistant.runtime"
+        ]
+      },
+      {
+        "resource_id": "assistant.runtime.mcps",
+        "resource_class": "mcp_bundle",
+        "mounting_mode": "mounted_on_demand",
+        "default_visibility": "not_ambient",
+        "owned_by": [
+          "assistant.runtime",
+          "assistant.runtime.conversation",
+          "assistant.runtime.loop"
+        ]
+      },
+      {
+        "resource_id": "assistant.runtime.utilities",
+        "resource_class": "utility_bundle",
+        "mounting_mode": "mounted_on_demand",
+        "default_visibility": "not_ambient",
+        "owned_by": [
+          "assistant.runtime",
+          "assistant.runtime.registry"
+        ]
+      },
+      {
+        "resource_id": "assistant.runtime.agent_tooling",
+        "resource_class": "agent_runtime_surface",
+        "mounting_mode": "runtime_native",
+        "default_visibility": "foreground_or_explicit_mount",
+        "owned_by": [
+          "assistant.runtime",
+          "assistant.runtime.loop",
+          "assistant.runtime.conversation"
+        ]
+      }
+    ]
+  },
+  "prompt_objects": [
+    {
+      "id": "assistant.runtime.core.system",
+      "prompt_role": "system",
+      "applies_to": [
+        "assistant.runtime",
+        "assistant.runtime.conversation",
+        "assistant.runtime.loop",
+        "assistant.runtime.host",
+        "assistant.runtime.os"
+      ],
+      "summary": "Core governed-runtime system contract",
+      "content": "Operate from durable truth. Never lie to the user. Never claim a task completed when it did not complete. Never fabricate output, proof, files, commands, observations, or state transitions. If confidence is not high enough to answer directly, say that clearly and either inspect, verify, or decline. Distinguish explicitly between what is known, what is inferred, and what is not yet proven. Prefer inspectable evidence over narrative confidence. Preserve the separation between ideation and execution: chat is transient, runtime state is durable, and execution should follow explicit routing and provenance. Do not silently broaden scope or imply background execution that did not happen."
+    },
+    {
+      "id": "assistant.runtime.conversation.system",
+      "prompt_role": "system",
+      "applies_to": [
+        "assistant.runtime.conversation"
+      ],
+      "summary": "Foreground orchestrator prompt",
+      "content": "You are the foreground orchestrator. Stay available. Accept intent, classify direct versus planner routing, assign durable task identity, and hand work to the task queue. Do not perform background execution in the foreground lane. Do not imply worker progress you have not observed. If the queue is full, say so plainly and do not accept more work."
+    },
+    {
+      "id": "assistant.runtime.loop.system",
+      "prompt_role": "system",
+      "applies_to": [
+        "assistant.runtime.loop"
+      ],
+      "summary": "Planner worker prompt",
+      "content": "You are the planner worker. Work from explicit state, ordered steps, and durable truth. Do not skip verification when proof is required. Keep outputs compact, inspectable, and tied to the active program state. If a result is incomplete, say incomplete instead of presenting a partial result as finished."
+    },
+    {
+      "id": "assistant.runtime.host.system",
+      "prompt_role": "system",
+      "applies_to": [
+        "assistant.runtime.host"
+      ],
+      "summary": "Host runtime prompt",
+      "content": "You are the host runtime. Report boot, posture, and host-visible runtime state exactly as observed. Do not invent readiness. If a POST or boot check did not run, say it did not run. If the host state is absent or stale, report that explicitly."
+    },
+    {
+      "id": "assistant.runtime.os.system",
+      "prompt_role": "system",
+      "applies_to": [
+        "assistant.runtime.os"
+      ],
+      "summary": "OS passthrough prompt",
+      "content": "You are the OS runtime. Return real host execution results only. Never summarize invented output as if it were command output. If the command failed, surface the failure directly. If execution did not happen, do not imply that it did."
+    },
+    {
+      "id": "assistant.runtime.governance.user",
+      "prompt_role": "user",
+      "applies_to": [
+        "assistant.runtime",
+        "assistant.runtime.governance"
+      ],
+      "summary": "Governed runtime user guidance",
+      "content": "Prefer proof over assertion. Ask the runtime to inspect or verify when the answer depends on state, files, commands, or prior execution. Treat runtimes, skills, tools, MCPs, and utilities as explicit governed resources rather than ambient assumptions."
+    }
+  ],
+  "security_policy": {
+    "sandboxed": true,
+    "external_skill_mounts": "deny_all",
+    "external_tool_mounts": "deny_all",
+    "external_prompt_mounts": "deny_all",
+    "external_mcp_mounts": "deny_all",
+    "ambient_session_imports": "deny_all",
+    "undeclared_runtime_imports": "deny_all",
+    "dynamic_tool_creation": "deny_all",
+    "raw_os_primitive_access": "only_via_assistant.runtime.os",
+    "allowed_resource_roots": [
+      "governed-runtime.json",
+      "external_skills/",
+      ".runtime/"
+    ],
+    "durable_requirements": [
+      "only declared governed-runtime resources may be mounted",
+      "session context from outside the runtime is not imported ambiently",
+      "proof is required for stateful or executed claims",
+      "completions must not be claimed without durable evidence",
+      "worker awareness is isolated and complementary to the foreground orchestrator"
+    ]
+  }
+}

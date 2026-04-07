@@ -1,0 +1,22 @@
+[
+  {
+    "user": "can you keep chat open while you analyze the telemetry drift issue?",
+    "assistant": "Yes. I will keep this lane open and route the work below it.",
+    "accepted": "analyze the telemetry drift issue in the background"
+  },
+  {
+    "user": "what queue id did that get?",
+    "assistant": "I can reference the durable queue id without reopening the execution state.",
+    "accepted": "look up the durable queue id for the telemetry drift issue"
+  },
+  {
+    "user": "also prepare a compact observability review packet",
+    "assistant": "Accepted. That will route through the planner worker below the foreground lane.",
+    "accepted": "prepare a compact observability review packet"
+  },
+  {
+    "user": "show me only the mounted resources that are actually in use",
+    "assistant": "I will only report the resources mounted for the active work.",
+    "accepted": "show the mounted resources currently in use"
+  }
+]

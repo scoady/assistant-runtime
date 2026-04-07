@@ -1,0 +1,36 @@
+{
+  "schema": "assistant.runtime.transcript_proof.v1",
+  "turns": 4,
+  "unique_truth_tokens": 116,
+  "accepted_turns": 4,
+  "caveats": [
+    "this is a replay analysis of a transcript, not a live causal intervention",
+    "accepted work units strengthen the governed-route comparison; missing accepted fields fall back to the user turn",
+    "the report measures context exposure, drift pressure, and stable reference boundaries from the transcript structure"
+  ],
+  "governed": {
+    "visible_tokens": 144,
+    "relevant_tokens": 144,
+    "irrelevant_tokens": 0,
+    "truth_delivery_ratio": 1.0,
+    "context_amplification": 1.2413793103448276,
+    "drift_pressure_per_turn": 0.0,
+    "stable_reference_rate": 1.0,
+    "resume_boundary_rate": 1.0
+  },
+  "stock": {
+    "visible_tokens": 464,
+    "relevant_tokens": 200,
+    "irrelevant_tokens": 264,
+    "truth_delivery_ratio": 0.43103448275862066,
+    "context_amplification": 4.0,
+    "drift_pressure_per_turn": 66.0,
+    "stable_reference_rate": 0.0,
+    "resume_boundary_rate": 0.0
+  },
+  "delta": {
+    "irrelevant_reduction_tokens": 264,
+    "truth_delivery_gain": 0.5689655172413793,
+    "amplification_reduction": 2.7586206896551726
+  }
+}

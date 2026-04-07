@@ -1,0 +1,31 @@
+{
+  "schema": "assistant.runtime.proof_metrics.v1",
+  "scenario": "assistant.runtime.showcase.v1",
+  "turns": 20,
+  "unique_truth_tokens": 433,
+  "governed": {
+    "visible_tokens": 525,
+    "relevant_tokens": 525,
+    "irrelevant_tokens": 0,
+    "truth_delivery_ratio": 1.0,
+    "context_amplification": 1.2124711316397228,
+    "drift_pressure_per_turn": 0.0,
+    "stable_reference_rate": 1.0,
+    "resume_boundary_rate": 1.0
+  },
+  "stock": {
+    "visible_tokens": 1732,
+    "relevant_tokens": 753,
+    "irrelevant_tokens": 979,
+    "truth_delivery_ratio": 0.43475750577367206,
+    "context_amplification": 4.0,
+    "drift_pressure_per_turn": 48.95,
+    "stable_reference_rate": 0.0,
+    "resume_boundary_rate": 0.0
+  },
+  "delta": {
+    "irrelevant_reduction_tokens": 979,
+    "truth_delivery_gain": 0.5652424942263279,
+    "amplification_reduction": 2.787528868360277
+  }
+}

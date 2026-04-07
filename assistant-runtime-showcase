@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SHOWCASE_BIN="$SCRIPT_DIR/target/debug/assistant-runtime-showcase"
+
+if [ ! -x "$SHOWCASE_BIN" ]; then
+  echo "missing built showcase binary: $SHOWCASE_BIN" >&2
+  echo "build it once with: cargo build" >&2
+  exit 1
+fi
+
+exec "$SHOWCASE_BIN" "$@"
