@@ -89,17 +89,36 @@ fn cli_exposes_durable_truth_and_planning_status() {
         benchmark_json["schema"].as_str(),
         Some("assistant.runtime.benchmark.v1")
     );
+    assert_eq!(benchmark_json["modeled_profiles"].as_bool(), Some(true));
     assert_eq!(benchmark_json["governed"]["turns"].as_u64(), Some(20));
+    assert_eq!(benchmark_json["claude"]["turns"].as_u64(), Some(20));
+    assert_eq!(benchmark_json["codex"]["turns"].as_u64(), Some(20));
     assert_eq!(benchmark_json["stock"]["turns"].as_u64(), Some(20));
     assert_eq!(
         benchmark_json["governed"]["metrics"]["irrelevant_tokens"].as_u64(),
         Some(0)
     );
     assert!(
+        benchmark_json["claude"]["metrics"]["irrelevant_tokens"]
+            .as_u64()
+            .unwrap_or_default()
+            > 0
+    );
+    assert!(
+        benchmark_json["codex"]["metrics"]["irrelevant_tokens"]
+            .as_u64()
+            .unwrap_or_default()
+            > 0
+    );
+    assert!(
         benchmark_json["stock"]["metrics"]["irrelevant_tokens"]
             .as_u64()
             .unwrap_or_default()
             > 0
+    );
+    assert_eq!(
+        benchmark_json["summary"]["best_truth_delivery_route"].as_str(),
+        Some("governed")
     );
 
     let managed_resources = run_in_repo(repo, &["runtime", "managed-resources"]);
