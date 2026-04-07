@@ -1,5 +1,7 @@
 # assistant-runtime
 
+[![Release](https://img.shields.io/github/v/release/scoady/assistant-runtime?sort=semver)](https://github.com/scoady/assistant-runtime/releases)
+[![Tests](https://github.com/scoady/assistant-runtime/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/scoady/assistant-runtime/actions/workflows/test.yml)
 ![Runtime lanes explicit](docs/images/runtime-lanes-badge.svg)
 
 `assistant-runtime` is a small native runtime package for local assistant execution boundaries.
