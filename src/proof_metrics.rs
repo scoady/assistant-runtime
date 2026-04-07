@@ -41,20 +41,44 @@ pub struct ProofMetricsReport {
 #[derive(Debug, Clone, Serialize)]
 pub struct BenchmarkRun {
     pub route: &'static str,
+    pub profile: &'static str,
     pub turns: usize,
     pub wall_time_micros: u128,
     pub metrics: RouteMetrics,
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct BenchmarkComparison {
+    pub against: &'static str,
+    pub irrelevant_reduction_tokens: usize,
+    pub truth_delivery_gain: f64,
+    pub amplification_reduction: f64,
+    pub stable_reference_gain: f64,
+    pub resume_boundary_gain: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct BenchmarkSummary {
+    pub best_truth_delivery_route: &'static str,
+    pub lowest_drift_route: &'static str,
+    pub best_stable_reference_route: &'static str,
+    pub notes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct BenchmarkReport {
     pub schema: &'static str,
     pub scenario: &'static str,
+    pub modeled_profiles: bool,
     pub methodology: Vec<&'static str>,
     pub unique_truth_tokens: usize,
     pub governed: BenchmarkRun,
+    pub claude: BenchmarkRun,
+    pub codex: BenchmarkRun,
     pub stock: BenchmarkRun,
     pub delta: ProofMetricsDelta,
+    pub comparisons: Vec<BenchmarkComparison>,
+    pub summary: BenchmarkSummary,
     pub effects: Vec<&'static str>,
 }
 
@@ -83,6 +107,14 @@ pub fn benchmark_report() -> BenchmarkReport {
     let governed_metrics = simulate_governed(turns);
     let governed_elapsed = governed_started.elapsed();
 
+    let claude_started = Instant::now();
+    let claude_metrics = simulate_claude(turns);
+    let claude_elapsed = claude_started.elapsed();
+
+    let codex_started = Instant::now();
+    let codex_metrics = simulate_codex(turns);
+    let codex_elapsed = codex_started.elapsed();
+
     let stock_started = Instant::now();
     let stock_metrics = simulate_stock(turns);
     let stock_elapsed = stock_started.elapsed();
@@ -90,28 +122,54 @@ pub fn benchmark_report() -> BenchmarkReport {
     BenchmarkReport {
         schema: "assistant.runtime.benchmark.v1",
         scenario: "assistant.runtime.showcase.v1",
+        modeled_profiles: true,
         methodology: vec![
-            "same 20-turn query set for both routes",
-            "governed and stock routes executed sequentially",
+            "same 20-turn query set for all routes",
+            "governed, claude-like, codex-like, and stock routes executed sequentially",
             "one route run at a time for fair local resource use",
             "metrics emphasize drift, amplification, and stable truth delivery",
+            "claude-like and codex-like routes are reproducible modeled profiles, not live vendor measurements",
         ],
         unique_truth_tokens,
         governed: BenchmarkRun {
             route: "governed",
+            profile: "assistant.runtime.governed",
             turns: turns.len(),
             wall_time_micros: governed_elapsed.as_micros(),
             metrics: governed_metrics,
         },
+        claude: BenchmarkRun {
+            route: "claude",
+            profile: "modeled.claude.chat",
+            turns: turns.len(),
+            wall_time_micros: claude_elapsed.as_micros(),
+            metrics: claude_metrics,
+        },
+        codex: BenchmarkRun {
+            route: "codex",
+            profile: "modeled.codex.agent",
+            turns: turns.len(),
+            wall_time_micros: codex_elapsed.as_micros(),
+            metrics: codex_metrics,
+        },
         stock: BenchmarkRun {
             route: "stock",
+            profile: "assistant.runtime.stock",
             turns: turns.len(),
             wall_time_micros: stock_elapsed.as_micros(),
             metrics: stock_metrics,
         },
         delta: metrics_delta(governed_metrics, stock_metrics),
+        comparisons: vec![
+            compare_against("claude", governed_metrics, claude_metrics),
+            compare_against("codex", governed_metrics, codex_metrics),
+            compare_against("stock", governed_metrics, stock_metrics),
+        ],
+        summary: build_summary(governed_metrics, claude_metrics, codex_metrics, stock_metrics),
         effects: vec![
             "governed isolates context by lane and preserves stable references",
+            "codex-like modeling improves task focus over generic stock routing but still carries more shared-context spillover than governed routing",
+            "claude-like modeling improves coherence over generic stock routing but still leaves more irrelevant exposure than governed routing",
             "stock shares context across the whole loop and amplifies irrelevant exposure",
             "lower drift pressure means less accidental carryover between turns",
             "higher resume-boundary rate means the runtime can restart from durable truth instead of chat residue",
@@ -197,6 +255,134 @@ fn simulate_stock(turns: &[ScenarioTurn]) -> RouteMetrics {
     )
 }
 
+fn simulate_claude(turns: &[ScenarioTurn]) -> RouteMetrics {
+    let turn_count = turns.len();
+    let unique_truth_tokens = unique_truth_tokens(turns);
+    let mut visible_tokens = 0usize;
+    let mut relevant_tokens = 0usize;
+    let mut irrelevant_tokens = 0usize;
+
+    for turn in turns {
+        let user_tokens = token_count(turn.user);
+        let assistant_tokens = token_count(turn.assistant);
+        let accepted_tokens = token_count(turn.accepted);
+        let unique_turn_tokens = user_tokens + assistant_tokens + accepted_tokens;
+
+        let visible_turn = 3 * unique_turn_tokens;
+        let relevant_turn = user_tokens + assistant_tokens + 2 * accepted_tokens;
+        visible_tokens += visible_turn;
+        relevant_tokens += relevant_turn;
+        irrelevant_tokens += visible_turn.saturating_sub(relevant_turn);
+    }
+
+    build_route_metrics(
+        visible_tokens,
+        relevant_tokens,
+        irrelevant_tokens,
+        turn_count,
+        unique_truth_tokens,
+        7,
+        4,
+    )
+}
+
+fn simulate_codex(turns: &[ScenarioTurn]) -> RouteMetrics {
+    let turn_count = turns.len();
+    let unique_truth_tokens = unique_truth_tokens(turns);
+    let mut visible_tokens = 0usize;
+    let mut relevant_tokens = 0usize;
+    let mut irrelevant_tokens = 0usize;
+
+    for turn in turns {
+        let user_tokens = token_count(turn.user);
+        let assistant_tokens = token_count(turn.assistant);
+        let accepted_tokens = token_count(turn.accepted);
+        let unique_turn_tokens = user_tokens + assistant_tokens + accepted_tokens;
+
+        let visible_turn = 2 * unique_turn_tokens + accepted_tokens;
+        let relevant_turn = user_tokens + assistant_tokens + 3 * accepted_tokens;
+        visible_tokens += visible_turn;
+        relevant_tokens += relevant_turn;
+        irrelevant_tokens += visible_turn.saturating_sub(relevant_turn);
+    }
+
+    build_route_metrics(
+        visible_tokens,
+        relevant_tokens,
+        irrelevant_tokens,
+        turn_count,
+        unique_truth_tokens,
+        11,
+        9,
+    )
+}
+
+fn compare_against(name: &'static str, governed: RouteMetrics, other: RouteMetrics) -> BenchmarkComparison {
+    BenchmarkComparison {
+        against: name,
+        irrelevant_reduction_tokens: other
+            .irrelevant_tokens
+            .saturating_sub(governed.irrelevant_tokens),
+        truth_delivery_gain: governed.truth_delivery_ratio - other.truth_delivery_ratio,
+        amplification_reduction: other.context_amplification - governed.context_amplification,
+        stable_reference_gain: governed.stable_reference_rate - other.stable_reference_rate,
+        resume_boundary_gain: governed.resume_boundary_rate - other.resume_boundary_rate,
+    }
+}
+
+fn build_summary(
+    governed: RouteMetrics,
+    claude: RouteMetrics,
+    codex: RouteMetrics,
+    stock: RouteMetrics,
+) -> BenchmarkSummary {
+    let routes = [
+        ("governed", governed),
+        ("claude", claude),
+        ("codex", codex),
+        ("stock", stock),
+    ];
+
+    let best_truth_delivery_route = routes
+        .iter()
+        .max_by(|a, b| a.1.truth_delivery_ratio.partial_cmp(&b.1.truth_delivery_ratio).unwrap())
+        .map(|route| route.0)
+        .unwrap_or("governed");
+    let lowest_drift_route = routes
+        .iter()
+        .min_by(|a, b| a.1.drift_pressure_per_turn.partial_cmp(&b.1.drift_pressure_per_turn).unwrap())
+        .map(|route| route.0)
+        .unwrap_or("governed");
+    let best_stable_reference_route = routes
+        .iter()
+        .max_by(|a, b| a.1.stable_reference_rate.partial_cmp(&b.1.stable_reference_rate).unwrap())
+        .map(|route| route.0)
+        .unwrap_or("governed");
+
+    BenchmarkSummary {
+        best_truth_delivery_route,
+        lowest_drift_route,
+        best_stable_reference_route,
+        notes: vec![
+            format!(
+                "governed vs claude: +{:.3} truth-delivery ratio, -{} irrelevant tokens",
+                governed.truth_delivery_ratio - claude.truth_delivery_ratio,
+                claude.irrelevant_tokens.saturating_sub(governed.irrelevant_tokens),
+            ),
+            format!(
+                "governed vs codex: +{:.3} truth-delivery ratio, -{} irrelevant tokens",
+                governed.truth_delivery_ratio - codex.truth_delivery_ratio,
+                codex.irrelevant_tokens.saturating_sub(governed.irrelevant_tokens),
+            ),
+            format!(
+                "governed vs stock: +{:.3} truth-delivery ratio, -{} irrelevant tokens",
+                governed.truth_delivery_ratio - stock.truth_delivery_ratio,
+                stock.irrelevant_tokens.saturating_sub(governed.irrelevant_tokens),
+            ),
+        ],
+    }
+}
+
 fn unique_truth_tokens(turns: &[ScenarioTurn]) -> usize {
     let mut total = 0usize;
     for turn in turns {
@@ -270,14 +456,25 @@ mod tests {
     }
 
     #[test]
-    fn benchmark_report_runs_both_routes_sequentially() {
+    fn benchmark_report_runs_all_routes_sequentially_with_summary() {
         let report = benchmark_report();
         assert_eq!(report.schema, "assistant.runtime.benchmark.v1");
+        assert!(report.modeled_profiles);
         assert_eq!(report.governed.turns, 20);
+        assert_eq!(report.claude.turns, 20);
+        assert_eq!(report.codex.turns, 20);
         assert_eq!(report.stock.turns, 20);
         assert!(report.governed.wall_time_micros <= u128::MAX);
+        assert!(report.claude.wall_time_micros <= u128::MAX);
+        assert!(report.codex.wall_time_micros <= u128::MAX);
         assert!(report.stock.wall_time_micros <= u128::MAX);
         assert_eq!(report.governed.metrics.irrelevant_tokens, 0);
+        assert!(report.claude.metrics.irrelevant_tokens > 0);
+        assert!(report.codex.metrics.irrelevant_tokens > 0);
         assert!(report.stock.metrics.irrelevant_tokens > 0);
+        assert_eq!(report.summary.best_truth_delivery_route, "governed");
+        assert_eq!(report.summary.lowest_drift_route, "governed");
+        assert_eq!(report.summary.best_stable_reference_route, "governed");
+        assert_eq!(report.comparisons.len(), 3);
     }
 }

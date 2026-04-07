@@ -27,6 +27,14 @@ The comparison is explicit:
 - `governed`: isolated lane context, queue-backed handoff, stable references
 - `stock`: shared context accumulation across the whole loop
 
+`runtime benchmark` also includes reproducible modeled route profiles for `claude` and `codex`.
+
+Important:
+
+- these are modeled profiles, not live vendor measurements
+- the comparison is still useful because it is deterministic, versioned, and rerunnable from the repo
+- the benchmark output now includes a summary section with the best route by key metrics and concise governed-vs-peer notes
+
 ## Benchmark Script
 
 Use the repo-local benchmark script to run governed and stock routes against the same 20-turn scenario:
